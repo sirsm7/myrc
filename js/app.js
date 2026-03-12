@@ -144,7 +144,7 @@ function adjustQuantity(elementId, change) {
 }
 
 /**
- * Calculate overall total dynamically
+ * Calculate overall total dynamically and handle payment section visibility
  */
 function calculateTotal() {
     const qtyMikroInput = document.getElementById('kuantitiMikro');
@@ -159,6 +159,22 @@ function calculateTotal() {
     // PRICE_MIKRO and PRICE_AI are global constants from js/config.js
     const total = (qtyMikro * PRICE_MIKRO) + (qtyAI * PRICE_AI);
     totalDisplay.textContent = total.toLocaleString('en-MY');
+
+    // Dynamic Payment Section Visibility & Validation Logic
+    const paymentSection = document.getElementById('paymentSection');
+    const resitInput = document.getElementById('resitPembayaran');
+    
+    if (paymentSection && resitInput) {
+        if (qtyMikro > 0 || qtyAI > 0) {
+            paymentSection.classList.remove('hidden');
+            resitInput.required = true;
+        } else {
+            paymentSection.classList.add('hidden');
+            resitInput.required = false;
+            resitInput.value = ''; // Clear file input securely if user reverts to 0
+        }
+    }
+
     return total;
 }
 
@@ -290,7 +306,7 @@ async function handleFormSubmit(event) {
             if (result.isConfirmed) {
                 // Reset Form
                 document.getElementById('bookingForm').reset();
-                document.getElementById('totalDisplay').textContent = '0';
+                calculateTotal(); // Trigger DOM reset securely
                 document.getElementById('kodSekolahData').value = '';
                 isSchoolSelectedFromList = false;
             }
