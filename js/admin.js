@@ -98,8 +98,11 @@ function setupEventListeners() {
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
+                // Padam sesi keselamatan (session storage)
                 sessionStorage.removeItem('adminLoggedIn');
-                showLogin();
+                
+                // Halakan pengguna kembali ke muka depan utama
+                window.location.href = 'index.html';
             }
         });
     });
