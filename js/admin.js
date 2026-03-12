@@ -3,7 +3,7 @@
  * ADMIN DASHBOARD LOGIC
  * ============================================================================
  * Handles static login, data fetching from Supabase, metrics calculation, 
- * data table rendering, filtering, and record deletion.
+ * data table rendering, filtering, record deletion, and receipt generation.
  * Relies on supabaseClient initialized in js/config.js.
  * ============================================================================
  */
@@ -233,6 +233,18 @@ function calculateMetrics(data) {
 }
 
 /**
+ * Format phone number to international WhatsApp format (e.g. 012... to 6012...)
+ */
+function formatWhatsAppNumber(phone) {
+    if (!phone) return '';
+    let cleaned = phone.replace(/\D/g, ''); // Remove non-numeric
+    if (cleaned.startsWith('0')) {
+        cleaned = '6' + cleaned;
+    }
+    return cleaned;
+}
+
+/**
  * Render data into the HTML table
  */
 function renderTable(data) {
@@ -260,6 +272,11 @@ function renderTable(data) {
         // Format RM
         const rmFormatted = parseFloat(record.jumlah_rm).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+        // WhatsApp Setup
+        const waPhone = formatWhatsAppNumber(record.no_telefon);
+        const waMessage = encodeURIComponent(`Salam Cikgu ${record.nama_penempah}, ini merujuk kepada tempahan Litar Mikrobotik & AI Robotik dari ${record.nama_sekolah}.`);
+        const waLink = `https://wa.me/${waPhone}?text=${waMessage}`;
+
         // Build Row
         const tr = document.createElement('tr');
         tr.className = "hover:bg-gray-50 transition-colors";
@@ -272,6 +289,10 @@ function renderTable(data) {
             <td class="px-6 py-4 text-sm text-gray-900">
                 <div class="font-medium">${escapeHtml(record.nama_penempah)}</div>
                 <div class="text-xs text-gray-500">${escapeHtml(record.no_telefon)}</div>
+                <a href="${waLink}" target="_blank" class="mt-1 inline-flex items-center text-xs font-semibold text-green-600 hover:text-green-800 transition-colors" title="WhatsApp Penempah">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                    WhatsApp
+                </a>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold ${record.kuantiti_mikro > 0 ? 'text-indigo-600' : 'text-gray-300'}">${record.kuantiti_mikro}</td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold ${record.kuantiti_ai > 0 ? 'text-purple-600' : 'text-gray-300'}">${record.kuantiti_ai}</td>
@@ -279,13 +300,214 @@ function renderTable(data) {
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
                 ${record.resit_url ? `<a href="${record.resit_url}" target="_blank" class="text-blue-600 hover:text-blue-900 font-medium underline">Lihat Resit</a>` : '<span class="text-gray-400 italic">Tiada Resit</span>'}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                <button onclick="deleteRecord('${record.id}')" class="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded transition-colors">Padam</button>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
+                <button onclick="generateReceipt('${record.id}')" class="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded transition-colors" title="Jana Resit Pembelian">Resit</button>
+                <button onclick="deleteRecord('${record.id}')" class="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded transition-colors" title="Padam Rekod">Padam</button>
             </td>
         `;
         dataTableBody.appendChild(tr);
     });
 }
+
+/**
+ * Generate Printable Receipt (Native Browser Feature)
+ */
+window.generateReceipt = function(recordId) {
+    const record = allRecords.find(r => r.id == recordId);
+    if (!record) {
+        Swal.fire('Ralat', 'Rekod tidak dijumpai', 'error');
+        return;
+    }
+
+    // Formatting Variables
+    const dateObj = new Date(record.created_at);
+    const dateFormatted = dateObj.toLocaleDateString('en-MY', { day: '2-digit', month: 'long', year: 'numeric' });
+    const timeFormatted = dateObj.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+    const rmFormatted = parseFloat(record.jumlah_rm).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    
+    // Pricing calculation based on config globals (assuming PRICE_MIKRO=90, PRICE_AI=100)
+    // We use a safe fallback here in case config.js globals are not exposed cleanly
+    const priceMikro = typeof PRICE_MIKRO !== 'undefined' ? PRICE_MIKRO : 90;
+    const priceAI = typeof PRICE_AI !== 'undefined' ? PRICE_AI : 100;
+
+    const subTotalMikro = (record.kuantiti_mikro * priceMikro).toLocaleString('en-MY', { minimumFractionDigits: 2 });
+    const subTotalAI = (record.kuantiti_ai * priceAI).toLocaleString('en-MY', { minimumFractionDigits: 2 });
+
+    // HTML Template for the Receipt
+    const receiptHtml = `
+    <!DOCTYPE html>
+    <html lang="ms">
+    <head>
+        <meta charset="UTF-8">
+        <title>Resit Pembelian - ${escapeHtml(record.nama_sekolah)}</title>
+        <style>
+            @page { margin: 0; size: auto; }
+            body { 
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+                padding: 40px; 
+                color: #222; 
+                background: #fff;
+                line-height: 1.5;
+            }
+            .receipt-box { 
+                max-width: 700px; 
+                margin: 0 auto; 
+                border: 1px solid #ddd; 
+                padding: 40px; 
+                box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            }
+            .header { 
+                text-align: center; 
+                border-bottom: 2px solid #222; 
+                padding-bottom: 20px; 
+                margin-bottom: 30px; 
+            }
+            .title { 
+                font-size: 26px; 
+                font-weight: 800; 
+                margin: 0; 
+                text-transform: uppercase; 
+                letter-spacing: 2px; 
+            }
+            .subtitle { 
+                font-size: 14px; 
+                color: #555; 
+                margin-top: 5px; 
+            }
+            .info-grid {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 30px;
+            }
+            .info-col table { border-collapse: collapse; }
+            .info-col table td { padding: 4px 0; font-size: 14px; }
+            .info-col table td.label { font-weight: bold; width: 130px; color: #555; }
+            .items-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-bottom: 30px; 
+            }
+            .items-table th, .items-table td { 
+                border-bottom: 1px solid #ddd; 
+                padding: 12px 10px; 
+                text-align: left; 
+                font-size: 14px;
+            }
+            .items-table th { 
+                background-color: #f9f9f9; 
+                font-weight: bold; 
+                text-transform: uppercase; 
+                font-size: 12px; 
+                color: #555;
+            }
+            .items-table td.amount, .items-table th.amount { text-align: right; }
+            .items-table td.center, .items-table th.center { text-align: center; }
+            .total-row td { 
+                font-size: 18px; 
+                font-weight: 800; 
+                border-top: 2px solid #222; 
+                padding-top: 15px; 
+            }
+            .footer { 
+                text-align: center; 
+                font-size: 12px; 
+                color: #777; 
+                margin-top: 50px; 
+                border-top: 1px dashed #ccc; 
+                padding-top: 20px; 
+            }
+            /* Print Specific Styles */
+            @media print {
+                body { padding: 0; background: transparent; }
+                .receipt-box { border: none; box-shadow: none; padding: 0; max-width: 100%; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="receipt-box">
+            <div class="header">
+                <h1 class="title">Resit Pembelian Litar</h1>
+                <div class="subtitle">Mikrobotik & AI Robotik</div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-col">
+                    <table>
+                        <tr><td class="label">Sekolah:</td><td>${escapeHtml(record.nama_sekolah)} (${escapeHtml(record.kod_sekolah)})</td></tr>
+                        <tr><td class="label">Penempah:</td><td>${escapeHtml(record.nama_penempah)}</td></tr>
+                        <tr><td class="label">Telefon:</td><td>${escapeHtml(record.no_telefon)}</td></tr>
+                    </table>
+                </div>
+                <div class="info-col">
+                    <table>
+                        <tr><td class="label">No. Rujukan:</td><td>#${record.id.slice(0, 8).toUpperCase()}</td></tr>
+                        <tr><td class="label">Tarikh:</td><td>${dateFormatted}</td></tr>
+                        <tr><td class="label">Masa:</td><td>${timeFormatted}</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>Perkara</th>
+                        <th class="center">Kuantiti</th>
+                        <th class="amount">Harga Seunit (RM)</th>
+                        <th class="amount">Jumlah (RM)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${record.kuantiti_mikro > 0 ? `
+                    <tr>
+                        <td><strong>Litar Mikrobotik</strong><br><span style="color:#777; font-size:12px;">Material Tarpaulin (Cetakan Normal)</span></td>
+                        <td class="center">${record.kuantiti_mikro}</td>
+                        <td class="amount">${priceMikro.toFixed(2)}</td>
+                        <td class="amount">${subTotalMikro}</td>
+                    </tr>` : ''}
+                    
+                    ${record.kuantiti_ai > 0 ? `
+                    <tr>
+                        <td><strong>Litar AI Robotik</strong><br><span style="color:#777; font-size:12px;">Material Tarpaulin (Cetakan UV)</span></td>
+                        <td class="center">${record.kuantiti_ai}</td>
+                        <td class="amount">${priceAI.toFixed(2)}</td>
+                        <td class="amount">${subTotalAI}</td>
+                    </tr>` : ''}
+                    
+                    <tr class="total-row">
+                        <td colspan="3" style="text-align: right;">JUMLAH KESELURUHAN:</td>
+                        <td class="amount">${rmFormatted}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="footer">
+                <p>Resit ini dijana secara automatik oleh sistem dan tidak memerlukan tandatangan.</p>
+                <p>&copy; ${new Date().getFullYear()} Tempahan Litar Automatik.</p>
+            </div>
+        </div>
+        
+        <script>
+            // Automatically trigger print dialog when fully loaded
+            window.onload = function() {
+                window.print();
+            };
+        </script>
+    </body>
+    </html>
+    `;
+
+    // Open a new blank window
+    const printWindow = window.open('', '_blank', 'width=800,height=900,menubar=no,toolbar=no,location=no,status=no');
+    
+    if (printWindow) {
+        // Write the HTML into the new window
+        printWindow.document.open();
+        printWindow.document.write(receiptHtml);
+        printWindow.document.close();
+    } else {
+        Swal.fire('Pop-up Disekat', 'Sila benarkan pop-up di browser anda untuk menjana resit.', 'warning');
+    }
+};
 
 /**
  * Delete a specific record by ID
