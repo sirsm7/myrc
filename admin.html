@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Tempahan Litar</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="https://lh3.googleusercontent.com/d/18VTHEYDgvec8VXeyp53EMi8xB2r796F0" type="image/png">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- SweetAlert2 for Professional Modals -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* Custom scrollbar for the table */
+        .table-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .table-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        .table-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .table-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .loader {
+            border-top-color: #3b82f6;
+            -webkit-animation: spinner 1s linear infinite;
+            animation: spinner 1s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans text-gray-800 antialiased">
+
+    <!-- ========================================== -->
+    <!-- LOGIN OVERLAY / MODAL                      -->
+    <!-- ========================================== -->
+    <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-95 backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-transform">
+            <div class="text-center mb-8">
+                <img src="https://lh3.googleusercontent.com/d/18VTHEYDgvec8VXeyp53EMi8xB2r796F0" alt="Logo" class="h-20 w-auto mx-auto mb-4 object-contain">
+                <h2 class="text-2xl font-extrabold text-gray-900">Log Masuk Admin</h2>
+                <p class="text-sm text-gray-500 mt-2">Sistem Pengurusan Tempahan Litar</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label for="adminEmail" class="block text-sm font-semibold text-gray-700">Emel Akses</label>
+                    <input type="email" id="adminEmail" required placeholder="admin@tech4ag.my"
+                        class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900">
+                </div>
+                <div>
+                    <label for="adminPassword" class="block text-sm font-semibold text-gray-700">Kata Laluan</label>
+                    <input type="password" id="adminPassword" required placeholder="••••••••"
+                        class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900">
+                </div>
+                <button type="submit" id="loginBtn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    Daftar Masuk
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MAIN DASHBOARD (Hidden by default)         -->
+    <!-- ========================================== -->
+    <div id="dashboard" class="hidden flex-col min-h-screen">
+        
+        <!-- Navigation Bar -->
+        <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <img src="https://lh3.googleusercontent.com/d/18VTHEYDgvec8VXeyp53EMi8xB2r796F0" alt="Logo" class="h-10 w-auto mr-3">
+                        <span class="font-bold text-xl text-gray-900 hidden sm:block">Papan Pemuka Admin</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="text-sm text-gray-500 mr-4 hidden md:block">Log masuk sebagai: <span class="font-semibold text-gray-800">Admin Utama</span></span>
+                        <button id="logoutBtn" class="px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors border border-red-200">
+                            Log Keluar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+            
+            <div class="flex justify-between items-end mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Ringkasan Tempahan</h1>
+                    <p class="text-sm text-gray-500 mt-1">Data dikemas kini secara masa nyata dari pangkalan data.</p>
+                </div>
+                <button id="refreshBtn" class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm flex items-center transition-colors">
+                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Segar Semula
+                </button>
+            </div>
+
+            <!-- Metrics Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Card 1: Total RM -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Jumlah Kutipan Keseluruhan</dt>
+                    <dd class="mt-2 text-3xl font-extrabold text-blue-600">RM <span id="metricTotalRM">0</span></dd>
+                </div>
+                <!-- Card 2: Total Orders -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Jumlah Kuantiti Terjual</dt>
+                    <dd class="mt-2 text-3xl font-extrabold text-gray-900" id="metricTotalKuantiti">0 <span class="text-lg font-medium text-gray-500">unit</span></dd>
+                </div>
+                <!-- Card 3: Mikrobotik -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col border-l-4 border-l-indigo-500">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Kuantiti Litar Mikrobotik</dt>
+                    <dd class="mt-2 text-3xl font-extrabold text-indigo-600" id="metricTotalMikro">0</dd>
+                </div>
+                <!-- Card 4: AI Robotik -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col border-l-4 border-l-purple-500">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Kuantiti Litar AI Robotik</dt>
+                    <dd class="mt-2 text-3xl font-extrabold text-purple-600" id="metricTotalAI">0</dd>
+                </div>
+            </div>
+
+            <!-- Data Table Section -->
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+                
+                <!-- Filters Header -->
+                <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Senarai Penuh Tempahan</h3>
+                    
+                    <div class="flex space-x-2">
+                        <button id="filterAll" class="px-3 py-1.5 bg-gray-800 text-white text-xs font-semibold rounded-md shadow-sm transition-colors">Semua</button>
+                        <button id="filterMikro" class="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-semibold rounded-md shadow-sm transition-colors">Ada Mikrobotik</button>
+                        <button id="filterAI" class="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-semibold rounded-md shadow-sm transition-colors">Ada AI Robotik</button>
+                    </div>
+                </div>
+
+                <!-- Table Wrapper -->
+                <div class="overflow-x-auto table-scrollbar relative min-h-[300px]">
+                    <!-- Loading Spinner for Table -->
+                    <div id="tableLoading" class="hidden absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-10">
+                        <div class="loader border-4 border-gray-200 rounded-full w-12 h-12"></div>
+                    </div>
+
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tarikh</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Sekolah</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Penempah & Telefon</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Mikro</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">AI</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Jumlah (RM)</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Resit</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Data will be injected here via JavaScript -->
+                            <tr>
+                                <td colspan="8" class="px-6 py-10 text-center text-gray-500 text-sm italic">
+                                    Sila tunggu, sedang memuat turun data...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Table Footer / Pagination Placeholder -->
+                <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 text-xs text-gray-500 flex justify-between items-center">
+                    <span id="recordCountDisplay">Memaparkan 0 rekod.</span>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- External Configuration and Admin Logic Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/admin.js"></script>
+    
+</body>
+</html>
