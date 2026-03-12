@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borang Tempahan Litar Mikrobotik dan AI Robotik</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="https://lh3.googleusercontent.com/d/18VTHEYDgvec8VXeyp53EMi8xB2r796F0" type="image/png">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- SweetAlert2 for Professional Modals -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* Custom styles to handle numeric input spinners */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Custom Scrollbar for Autocomplete Dropdown */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-gray-800 antialiased">
+
+    <div class="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        
+        <!-- Header Section -->
+        <div class="bg-white rounded-t-2xl shadow-lg p-8 border-b-4 border-blue-600 flex flex-col items-center text-center">
+            <img src="https://lh3.googleusercontent.com/d/18VTHEYDgvec8VXeyp53EMi8xB2r796F0" alt="Logo Utama" class="h-24 w-auto mb-4 object-contain">
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">
+                BORANG TEMPAHAN LITAR MIKROBOTIK DAN AI ROBOTIK
+            </h1>
+            <p class="text-gray-600 mt-2 max-w-2xl text-sm leading-relaxed">
+                Spesifikasi Fizikal Litar: Saiz <strong>96 inci x 48 inci</strong> | Material <strong>Tarpaulin</strong>
+            </p>
+        </div>
+
+        <!-- Form Section -->
+        <div class="bg-white rounded-b-2xl shadow-lg p-8">
+            <form id="bookingForm" onsubmit="handleFormSubmit(event)">
+                
+                <!-- Section 1: Maklumat Pemohon -->
+                <div class="mb-8">
+                    <h2 class="text-xl font-bold text-gray-800 border-b border-gray-200 pb-2 mb-4">Maklumat Pemohon</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <!-- Searchable Input Nama Sekolah -->
+                        <div class="col-span-1 md:col-span-2 relative">
+                            <label for="namaSekolahSearch" class="block text-sm font-semibold text-gray-700 mb-1">Carian Nama Sekolah <span class="text-red-500">*</span></label>
+                            <input type="text" id="namaSekolahSearch" autocomplete="off" required placeholder="Cth: SK BANDAR BARU..."
+                                class="block w-full rounded-md border border-gray-300 shadow-sm px-4 py-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 uppercase transition-colors">
+                            
+                            <!-- Hidden input to store selected school code -->
+                            <input type="hidden" id="kodSekolahData" name="kodSekolahData">
+                            
+                            <!-- Loading Indicator for Search -->
+                            <div id="searchSpinner" class="hidden absolute right-4 top-10 loader border-2 border-gray-300 rounded-full w-5 h-5 border-t-blue-500"></div>
+
+                            <!-- Autocomplete Dropdown Container -->
+                            <div id="schoolSuggestions" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto custom-scrollbar">
+                                <!-- Suggestions will be injected here via JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- Nama Penuh Penempah -->
+                        <div>
+                            <label for="namaPenempah" class="block text-sm font-semibold text-gray-700 mb-1">Nama Penuh Penempah <span class="text-red-500">*</span></label>
+                            <input type="text" id="namaPenempah" name="namaPenempah" required placeholder="Cth: Ali bin Abu"
+                                class="block w-full rounded-md border border-gray-300 shadow-sm px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 uppercase">
+                        </div>
+
+                        <!-- No Telefon -->
+                        <div>
+                            <label for="noTelefon" class="block text-sm font-semibold text-gray-700 mb-1">Nombor Telefon <span class="text-red-500">*</span></label>
+                            <input type="tel" id="noTelefon" name="noTelefon" required placeholder="Cth: 0123456789"
+                                class="block w-full rounded-md border border-gray-300 shadow-sm px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Pilihan Litar -->
+                <div class="mb-8">
+                    <h2 class="text-xl font-bold text-gray-800 border-b border-gray-200 pb-2 mb-4">Pilihan Litar</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        
+                        <!-- Litar Mikrobotik -->
+                        <div class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+                            <div class="aspect-w-16 aspect-h-9 bg-gray-200">
+                                <img src="https://lh3.googleusercontent.com/d/1lR5jo6oiPdMa9YdKjxy33IME_f2VtehC" alt="Litar Mikrobotik" class="object-cover w-full h-48">
+                            </div>
+                            <div class="p-5">
+                                <h3 class="text-lg font-bold text-gray-900 mb-1">Litar Mikrobotik</h3>
+                                <p class="text-sm text-gray-600 mb-4">Cetakan: <span class="font-medium text-gray-800">Normal</span></p>
+                                <div class="flex justify-between items-center mb-4">
+                                    <span class="text-2xl font-extrabold text-blue-600">RM 90</span>
+                                </div>
+                                <div>
+                                    <label for="kuantitiMikro" class="block text-sm font-medium text-gray-700 mb-1">Kuantiti</label>
+                                    <div class="flex items-center border border-gray-300 rounded-md overflow-hidden bg-white w-32">
+                                        <button type="button" onclick="adjustQuantity('kuantitiMikro', -1)" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition">-</button>
+                                        <input type="number" id="kuantitiMikro" name="kuantitiMikro" value="0" min="0" onchange="calculateTotal()"
+                                            class="w-full text-center border-none focus:ring-0 text-gray-800 font-semibold p-2">
+                                        <button type="button" onclick="adjustQuantity('kuantitiMikro', 1)" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Litar AI Robotik -->
+                        <div class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+                            <div class="aspect-w-16 aspect-h-9 bg-gray-200">
+                                <img src="https://lh3.googleusercontent.com/d/1p4pIO7ypemZ9IDkVAHCNeZdsOBHevwlx" alt="Litar AI Robotik" class="object-cover w-full h-48">
+                            </div>
+                            <div class="p-5">
+                                <h3 class="text-lg font-bold text-gray-900 mb-1">Litar AI Robotik</h3>
+                                <p class="text-sm text-gray-600 mb-4">Cetakan: <span class="font-medium text-gray-800">UV (Kualiti Tinggi)</span></p>
+                                <div class="flex justify-between items-center mb-4">
+                                    <span class="text-2xl font-extrabold text-blue-600">RM 100</span>
+                                </div>
+                                <div>
+                                    <label for="kuantitiAI" class="block text-sm font-medium text-gray-700 mb-1">Kuantiti</label>
+                                    <div class="flex items-center border border-gray-300 rounded-md overflow-hidden bg-white w-32">
+                                        <button type="button" onclick="adjustQuantity('kuantitiAI', -1)" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition">-</button>
+                                        <input type="number" id="kuantitiAI" name="kuantitiAI" value="0" min="0" onchange="calculateTotal()"
+                                            class="w-full text-center border-none focus:ring-0 text-gray-800 font-semibold p-2">
+                                        <button type="button" onclick="adjustQuantity('kuantitiAI', 1)" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold transition">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Maklumat Pembayaran -->
+                <div class="mb-8">
+                    <h2 class="text-xl font-bold text-gray-800 border-b border-gray-200 pb-2 mb-4">Maklumat Pembayaran</h2>
+                    
+                    <div class="bg-gray-50 rounded-xl border border-gray-200 p-6 flex flex-col md:flex-row gap-8 items-center md:items-start">
+                        <!-- QR Code -->
+                        <div class="flex-shrink-0 bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                            <img src="https://lh3.googleusercontent.com/d/15tR_Oo1WNJskSw3Cidb-83gE0UJDGk49" alt="QR Code Pembayaran" class="w-40 h-40 object-contain">
+                            <p class="text-center text-xs font-semibold text-gray-500 mt-2">Imbas untuk bayar</p>
+                        </div>
+                        
+                        <!-- Account Details & Upload -->
+                        <div class="flex-grow w-full">
+                            <div class="mb-5 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                                <h3 class="text-md font-bold text-gray-900 mb-2">Pindahan Wang / Bank-in:</h3>
+                                <p class="text-sm text-gray-700 mb-1"><span class="font-semibold w-24 inline-block">Bank:</span> Maybank</p>
+                                <p class="text-sm text-gray-700 mb-1"><span class="font-semibold w-24 inline-block">No Akaun:</span> <span class="font-bold text-blue-700 text-base tracking-widest">1510 7113 2845</span></p>
+                                <p class="text-sm text-gray-700"><span class="font-semibold w-24 inline-block">Penama:</span> Malik Abdullah bin Adanan</p>
+                            </div>
+
+                            <div>
+                                <label for="resitPembayaran" class="block text-sm font-semibold text-gray-700 mb-1">Muat Naik Resit Pembayaran <span class="text-red-500">*</span></label>
+                                <input type="file" id="resitPembayaran" name="resitPembayaran" accept="image/jpeg, image/png, application/pdf" required
+                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-300 rounded-md p-2 bg-white">
+                                <p class="text-xs text-gray-500 mt-1">Format dibenarkan: JPG, PNG, atau PDF (Maksimum 5MB).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Ringkasan & Submit -->
+                <div class="bg-blue-50 rounded-xl p-6 border border-blue-100 flex flex-col md:flex-row justify-between items-center mt-8">
+                    <div class="text-center md:text-left mb-4 md:mb-0">
+                        <p class="text-sm text-blue-800 font-medium uppercase tracking-wide">Jumlah Keseluruhan</p>
+                        <p class="text-4xl font-extrabold text-blue-900 mt-1">RM <span id="totalDisplay">0</span></p>
+                    </div>
+                    
+                    <button type="submit" id="submitBtn" class="w-full md:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 text-white font-bold rounded-lg shadow-lg transform transition hover:-translate-y-0.5 flex items-center justify-center">
+                        <span id="btnText">Sahkan Tempahan & Hantar</span>
+                        <div id="btnSpinner" class="hidden loader border-2 border-white rounded-full w-5 h-5 ml-3 border-t-transparent"></div>
+                    </button>
+                </div>
+
+            </form>
+        </div>
+        
+        <!-- Footer -->
+        <div class="text-center mt-6 text-sm text-gray-500">
+            &copy; <span id="currentYear"></span> Hak Cipta Terpelihara. Sistem Tempahan Litar Automatik.
+        </div>
+    </div>
+
+    <!-- Client-Side Logic -->
+    <script>
+        // --- CONFIGURATION CONSTANTS ---
+        const SUPABASE_URL = 'https://app.tech4ag.my';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzYzMzczNjQ1LCJleHAiOjIwNzg3MzM2NDV9.vZOedqJzUn01PjwfaQp7VvRzSm4aRMr21QblPDK8AoY';
+        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwyuAsbzxkIbE2ib3GOi9fDpau2KIMzm-YnCbwgwzA4zFlgfVzYt61liHm-d58EPUOO/exec';
+        
+        const PRICE_MIKRO = 90;
+        const PRICE_AI = 100;
+
+        // Initialize Supabase Client
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // State Tracking
+        let isSchoolSelectedFromList = false;
+        let searchTimeout = null;
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+            setupAutocomplete();
+            setupAutoCaps();
+        });
+
+        /**
+         * Enforce auto-caps for text inputs
+         */
+        function setupAutoCaps() {
+            const inputsToCaps = ['namaSekolahSearch', 'namaPenempah'];
+            inputsToCaps.forEach(id => {
+                const el = document.getElementById(id);
+                el.addEventListener('input', function() {
+                    this.value = this.value.toUpperCase();
+                });
+            });
+        }
+
+        /**
+         * Sets up the autocomplete logic for the school search field
+         */
+        function setupAutocomplete() {
+            const searchInput = document.getElementById('namaSekolahSearch');
+            const suggestionsBox = document.getElementById('schoolSuggestions');
+            const hiddenKodSekolah = document.getElementById('kodSekolahData');
+            const spinner = document.getElementById('searchSpinner');
+
+            // Handle Input event with Debounce
+            searchInput.addEventListener('input', function(e) {
+                const query = e.target.value.trim().toUpperCase();
+                isSchoolSelectedFromList = false;
+                hiddenKodSekolah.value = '';
+
+                // Clear timeout if user is still typing
+                if (searchTimeout) clearTimeout(searchTimeout);
+
+                if (query.length < 3) {
+                    suggestionsBox.classList.add('hidden');
+                    spinner.classList.add('hidden');
+                    return;
+                }
+
+                // Show spinner and wait 400ms before querying Supabase
+                spinner.classList.remove('hidden');
+                searchTimeout = setTimeout(() => {
+                    fetchSchoolSuggestions(query);
+                }, 400);
+            });
+
+            // Close suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                    suggestionsBox.classList.add('hidden');
+                }
+            });
+        }
+
+        /**
+         * Fetch data from Supabase smpid_sekolah_data table
+         */
+        async function fetchSchoolSuggestions(query) {
+            const suggestionsBox = document.getElementById('schoolSuggestions');
+            const spinner = document.getElementById('searchSpinner');
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('smpid_sekolah_data')
+                    .select('kod_sekolah, nama_sekolah')
+                    .ilike('nama_sekolah', `%${query}%`)
+                    .neq('kod_sekolah', 'M030') // Filter out M030
+                    .limit(10); // Limit to top 10 results for performance
+
+                if (error) throw error;
+
+                suggestionsBox.innerHTML = '';
+
+                if (data && data.length > 0) {
+                    data.forEach(school => {
+                        const div = document.createElement('div');
+                        div.className = 'px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-0';
+                        div.innerHTML = `<p class="text-sm font-semibold text-gray-800">${school.nama_sekolah}</p>
+                                         <p class="text-xs text-gray-500">${school.kod_sekolah}</p>`;
+                        
+                        // Handle Selection
+                        div.addEventListener('click', function() {
+                            document.getElementById('namaSekolahSearch').value = school.nama_sekolah;
+                            document.getElementById('kodSekolahData').value = school.kod_sekolah;
+                            isSchoolSelectedFromList = true;
+                            suggestionsBox.classList.add('hidden');
+                        });
+                        
+                        suggestionsBox.appendChild(div);
+                    });
+                    suggestionsBox.classList.remove('hidden');
+                } else {
+                    suggestionsBox.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500">Tiada sekolah dijumpai.</div>';
+                    suggestionsBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error("Error fetching schools:", err);
+            } finally {
+                spinner.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Adjust quantity using + / - buttons
+         */
+        function adjustQuantity(elementId, change) {
+            const input = document.getElementById(elementId);
+            let currentValue = parseInt(input.value) || 0;
+            let newValue = currentValue + change;
+            
+            if (newValue < 0) newValue = 0;
+            
+            input.value = newValue;
+            calculateTotal();
+        }
+
+        /**
+         * Calculate overall total dynamically
+         */
+        function calculateTotal() {
+            const qtyMikro = parseInt(document.getElementById('kuantitiMikro').value) || 0;
+            const qtyAI = parseInt(document.getElementById('kuantitiAI').value) || 0;
+            
+            const total = (qtyMikro * PRICE_MIKRO) + (qtyAI * PRICE_AI);
+            document.getElementById('totalDisplay').textContent = total.toLocaleString('en-MY');
+            return total;
+        }
+
+        /**
+         * Main Form Submission Handler
+         */
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+
+            // 1. Gather Inputs
+            const sekolahInput = document.getElementById('namaSekolahSearch').value.trim();
+            const kodSekolah = document.getElementById('kodSekolahData').value;
+            const namaPenempah = document.getElementById('namaPenempah').value.trim();
+            const noTelefon = document.getElementById('noTelefon').value.trim();
+            const qtyMikro = parseInt(document.getElementById('kuantitiMikro').value) || 0;
+            const qtyAI = parseInt(document.getElementById('kuantitiAI').value) || 0;
+            const fileInput = document.getElementById('resitPembayaran');
+            const totalRM = calculateTotal();
+
+            // 2. Pre-flight Validation
+            if (!isSchoolSelectedFromList || !kodSekolah) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Pilihan Sekolah Tidak Sah',
+                    text: 'Sila buat carian dan pilih nama sekolah daripada senarai cadangan yang diberikan.',
+                    confirmButtonColor: '#3b82f6'
+                });
+                return;
+            }
+
+            if (qtyMikro === 0 && qtyAI === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Pilihan Diperlukan',
+                    text: 'Sila pilih sekurang-kurangnya satu litar (Kuantiti minima 1) sebelum membuat tempahan.',
+                    confirmButtonColor: '#3b82f6'
+                });
+                return;
+            }
+
+            if (fileInput.files.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Resit Diperlukan',
+                    text: 'Sila muat naik resit pembayaran anda untuk pengesahan tempahan.',
+                    confirmButtonColor: '#3b82f6'
+                });
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+            if (file.size > MAX_FILE_SIZE) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Fail Terlalu Besar',
+                    text: 'Sila pastikan saiz fail resit tidak melebihi 5MB.',
+                    confirmButtonColor: '#ef4444'
+                });
+                return;
+            }
+
+            // 3. UI State: Processing
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            btnText.textContent = 'Memproses Tempahan...';
+            btnSpinner.classList.remove('hidden');
+
+            try {
+                // 4. Convert File to Base64
+                const base64Data = await convertFileToBase64(file);
+                
+                // 5. Upload File to GAS API
+                btnText.textContent = 'Memuat Naik Resit...';
+                const uploadPayload = {
+                    namaSekolah: sekolahInput,
+                    receiptData: base64Data,
+                    receiptName: file.name,
+                    receiptMimeType: file.type
+                };
+
+                const gasResponse = await fetch(GAS_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(uploadPayload),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' } // text/plain to avoid CORS preflight issues
+                });
+
+                const gasResult = await gasResponse.json();
+
+                if (gasResult.status !== 'success' || !gasResult.receiptUrl) {
+                    throw new Error(gasResult.message || "Gagal mendapatkan pautan resit dari pelayan.");
+                }
+
+                const receiptUrl = gasResult.receiptUrl;
+
+                // 6. Save Data to Supabase
+                btnText.textContent = 'Menyimpan Rekod...';
+                
+                const supabasePayload = {
+                    kod_sekolah: kodSekolah,
+                    nama_sekolah: sekolahInput,
+                    nama_penempah: namaPenempah,
+                    no_telefon: noTelefon,
+                    kuantiti_mikro: qtyMikro,
+                    kuantiti_ai: qtyAI,
+                    jumlah_rm: totalRM,
+                    resit_url: receiptUrl
+                };
+
+                const { error: dbError } = await supabaseClient
+                    .from('myrc_tempahan')
+                    .insert([supabasePayload]);
+
+                if (dbError) throw dbError;
+
+                // 7. Success Resolution
+                resetBtnState();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Tempahan Berjaya!',
+                    html: `Tempahan anda telah direkodkan dalam sistem selamat kami.<br><br><strong>Jumlah Pembayaran: RM ${totalRM.toLocaleString('en-MY')}</strong>`,
+                    confirmButtonColor: '#10b981',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Reset Form
+                        document.getElementById('bookingForm').reset();
+                        document.getElementById('totalDisplay').textContent = '0';
+                        document.getElementById('kodSekolahData').value = '';
+                        isSchoolSelectedFromList = false;
+                    }
+                });
+
+            } catch (error) {
+                console.error("Submission Error:", error);
+                resetBtnState();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Ralat Sistem',
+                    text: 'Terjadi ralat semasa memproses tempahan: ' + error.message,
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        }
+
+        /**
+         * Helper Function: Convert File to Base64 via Promise
+         */
+        function convertFileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const dataURL = reader.result;
+                    const base64Data = dataURL.split(',')[1];
+                    resolve(base64Data);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        /**
+         * Helper Function: Revert UI Button State
+         */
+        function resetBtnState() {
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            btnText.textContent = 'Sahkan Tempahan & Hantar';
+            btnSpinner.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
