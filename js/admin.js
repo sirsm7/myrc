@@ -3,7 +3,8 @@
  * ADMIN DASHBOARD LOGIC
  * ============================================================================
  * Handles static login, data fetching from Supabase, metrics calculation, 
- * data table rendering, filtering, record deletion, and receipt generation.
+ * data table rendering, filtering, record deletion, receipt generation,
+ * and system settings management (form active/inactive & closing date).
  * Relies on supabaseClient initialized in js/config.js.
  * ============================================================================
  */
@@ -35,6 +36,12 @@ const recordCountDisplay = document.getElementById('recordCountDisplay');
 const btnFilterAll = document.getElementById('filterAll');
 const btnFilterMikro = document.getElementById('filterMikro');
 const btnFilterAI = document.getElementById('filterAI');
+
+// --- Settings DOM Elements ---
+const formStatusToggle = document.getElementById('formStatusToggle');
+const closingDateInput = document.getElementById('closingDateInput');
+const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+const statusLabel = document.getElementById('statusLabel');
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -110,12 +117,21 @@ function setupEventListeners() {
     // Refresh Button
     refreshBtn.addEventListener('click', () => {
         fetchData();
+        fetchSettings(); // Refresh settings as well
     });
 
     // Filter Buttons
     btnFilterAll.addEventListener('click', () => applyFilter('ALL'));
     btnFilterMikro.addEventListener('click', () => applyFilter('MIKRO'));
     btnFilterAI.addEventListener('click', () => applyFilter('AI'));
+
+    // Settings System Listeners
+    if (formStatusToggle) {
+        formStatusToggle.addEventListener('change', updateStatusLabelUI);
+    }
+    if (saveSettingsBtn) {
+        saveSettingsBtn.addEventListener('click', saveSystemSettings);
+    }
 }
 
 /**
@@ -134,7 +150,118 @@ function showDashboard() {
     loginModal.classList.add('hidden');
     dashboard.classList.remove('hidden');
     dashboard.classList.add('flex');
+    
+    // Load Settings and Records
+    fetchSettings();
     fetchData();
+}
+
+/**
+ * Fetch System Settings (Form Status & Closing Date)
+ */
+async function fetchSettings() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('myrc_settings')
+            .select('*')
+            .eq('id', 1)
+            .single();
+
+        // PGRST116 means no rows found. We ignore it in case DB is fresh without the default row.
+        if (error && error.code !== 'PGRST116') throw error;
+
+        if (data) {
+            formStatusToggle.checked = data.is_active;
+            
+            if (data.closing_date) {
+                // Convert UTC from DB to local timezone format required by datetime-local input
+                const dateObj = new Date(data.closing_date);
+                const tzOffset = dateObj.getTimezoneOffset() * 60000; 
+                const localISOTime = (new Date(dateObj - tzOffset)).toISOString().slice(0, 16);
+                closingDateInput.value = localISOTime;
+            } else {
+                closingDateInput.value = '';
+            }
+        }
+
+        updateStatusLabelUI();
+        
+        // Enable UI elements after loading
+        formStatusToggle.disabled = false;
+        closingDateInput.disabled = false;
+        saveSettingsBtn.disabled = false;
+
+    } catch (error) {
+        console.error("Error fetching settings:", error);
+        statusLabel.textContent = "Ralat Tetapan";
+        statusLabel.className = "mr-3 text-sm font-bold text-red-600";
+    }
+}
+
+/**
+ * Update the UI label based on toggle state
+ */
+function updateStatusLabelUI() {
+    if (!statusLabel || !formStatusToggle) return;
+    
+    if (formStatusToggle.checked) {
+        statusLabel.textContent = 'Borang Aktif';
+        statusLabel.className = 'mr-3 text-sm font-bold text-green-600';
+    } else {
+        statusLabel.textContent = 'Borang Ditutup';
+        statusLabel.className = 'mr-3 text-sm font-bold text-red-600';
+    }
+}
+
+/**
+ * Save System Settings to Supabase
+ */
+async function saveSystemSettings() {
+    saveSettingsBtn.disabled = true;
+    const originalBtnHTML = saveSettingsBtn.innerHTML;
+    saveSettingsBtn.innerHTML = `
+        <div class="loader border-2 border-white rounded-full w-4 h-4 mr-2 border-t-transparent"></div>
+        Menyimpan...
+    `;
+
+    try {
+        const isActive = formStatusToggle.checked;
+        const localClosingDate = closingDateInput.value;
+        
+        let closingDateUTC = null;
+        if (localClosingDate) {
+            // Convert local datetime back to UTC for safe DB storage
+            const dateObj = new Date(localClosingDate);
+            closingDateUTC = dateObj.toISOString();
+        }
+
+        // Upsert ensures that if row id=1 doesn't exist, it creates it, otherwise updates it
+        const { error } = await supabaseClient
+            .from('myrc_settings')
+            .upsert({ id: 1, is_active: isActive, closing_date: closingDateUTC });
+
+        if (error) throw error;
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Tetapan Berjaya',
+            text: 'Status sistem borang telah dikemas kini.',
+            timer: 2000,
+            showConfirmButton: false
+        });
+
+    } catch (error) {
+        console.error("Error saving settings:", error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Ralat Simpanan',
+            text: 'Gagal mengemas kini tetapan sistem: ' + error.message,
+            confirmButtonColor: '#ef4444'
+        });
+    } finally {
+        saveSettingsBtn.disabled = false;
+        saveSettingsBtn.innerHTML = originalBtnHTML;
+    }
 }
 
 /**
@@ -144,7 +271,6 @@ async function fetchData() {
     tableLoading.classList.remove('hidden');
     
     try {
-        // Assuming table 'myrc_tempahan' has columns: id, created_at, nama_sekolah, kod_sekolah, nama_penempah, no_telefon, kuantiti_mikro, kuantiti_ai, jumlah_rm, resit_url
         const { data, error } = await supabaseClient
             .from('myrc_tempahan')
             .select('*')
@@ -329,7 +455,6 @@ window.generateReceipt = function(recordId) {
     const rmFormatted = parseFloat(record.jumlah_rm).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     
     // Pricing calculation based on config globals (assuming PRICE_MIKRO=90, PRICE_AI=100)
-    // We use a safe fallback here in case config.js globals are not exposed cleanly
     const priceMikro = typeof PRICE_MIKRO !== 'undefined' ? PRICE_MIKRO : 90;
     const priceAI = typeof PRICE_AI !== 'undefined' ? PRICE_AI : 100;
 
