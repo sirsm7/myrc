@@ -9,9 +9,13 @@
  * ============================================================================
  */
 
-// --- Admin Credentials ---
+// --- Admin Credentials & Internal Costs ---
 const ADMIN_EMAIL = 'admin@tech4ag.my';
 const ADMIN_PASS = 'ppdag@12345';
+
+// Kos tersembunyi untuk pengiraan keuntungan admin sahaja
+const COST_MIKRO = 80;
+const COST_AI = 96;
 
 // --- State Variables ---
 let allRecords = []; // Stores all fetched records
@@ -25,6 +29,8 @@ const logoutBtn = document.getElementById('logoutBtn');
 const refreshBtn = document.getElementById('refreshBtn');
 
 const metricTotalRM = document.getElementById('metricTotalRM');
+const metricTotalCost = document.getElementById('metricTotalCost');
+const metricTotalProfit = document.getElementById('metricTotalProfit');
 const metricTotalKuantiti = document.getElementById('metricTotalKuantiti');
 const metricTotalMikro = document.getElementById('metricTotalMikro');
 const metricTotalAI = document.getElementById('metricTotalAI');
@@ -342,7 +348,7 @@ function processDataForDisplay() {
 }
 
 /**
- * Calculate and update dashboard metrics
+ * Calculate and update dashboard metrics (Termasuk Kos & Untung)
  */
 function calculateMetrics(data) {
     let totalRM = 0;
@@ -355,7 +361,20 @@ function calculateMetrics(data) {
         totalAI += parseInt(record.kuantiti_ai) || 0;
     });
 
+    // Pengiraan Kos Keseluruhan dan Keuntungan Bersih
+    let totalCost = (totalMikro * COST_MIKRO) + (totalAI * COST_AI);
+    let totalProfit = totalRM - totalCost;
+
     metricTotalRM.textContent = totalRM.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    
+    // Kemas kini DOM untuk kad baharu jika wujud
+    if(metricTotalCost) {
+        metricTotalCost.textContent = totalCost.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    if(metricTotalProfit) {
+        metricTotalProfit.textContent = totalProfit.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
     metricTotalMikro.textContent = totalMikro;
     metricTotalAI.textContent = totalAI;
     metricTotalKuantiti.innerHTML = `${totalMikro + totalAI} <span class="text-lg font-medium text-gray-500">unit</span>`;

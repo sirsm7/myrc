@@ -148,23 +148,33 @@
             </div>
 
             <!-- Metrics Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <!-- Card 1: Total RM -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Card 1: Total RM (Kutipan) -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col border-l-4 border-l-blue-500">
                     <dt class="text-sm font-medium text-gray-500 truncate">Jumlah Kutipan Keseluruhan</dt>
                     <dd class="mt-2 text-3xl font-extrabold text-blue-600">RM <span id="metricTotalRM">0</span></dd>
                 </div>
-                <!-- Card 2: Total Orders -->
+                <!-- Card 2: Total Kos (Baru) -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col border-l-4 border-l-red-500">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Jumlah Kos Keseluruhan</dt>
+                    <dd class="mt-2 text-3xl font-extrabold text-red-600">RM <span id="metricTotalCost">0</span></dd>
+                </div>
+                <!-- Card 3: Anggaran Keuntungan (Baru) -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col border-l-4 border-l-green-500">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Anggaran Keuntungan Bersih</dt>
+                    <dd class="mt-2 text-3xl font-extrabold text-green-600">RM <span id="metricTotalProfit">0</span></dd>
+                </div>
+                <!-- Card 4: Total Orders -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
                     <dt class="text-sm font-medium text-gray-500 truncate">Jumlah Kuantiti Terjual</dt>
                     <dd class="mt-2 text-3xl font-extrabold text-gray-900" id="metricTotalKuantiti">0 <span class="text-lg font-medium text-gray-500">unit</span></dd>
                 </div>
-                <!-- Card 3: Mikrobotik -->
+                <!-- Card 5: Mikrobotik -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col border-l-4 border-l-indigo-500">
                     <dt class="text-sm font-medium text-gray-500 truncate">Kuantiti Litar Mikrobotik</dt>
                     <dd class="mt-2 text-3xl font-extrabold text-indigo-600" id="metricTotalMikro">0</dd>
                 </div>
-                <!-- Card 4: AI Robotik -->
+                <!-- Card 6: AI Robotik -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col border-l-4 border-l-purple-500">
                     <dt class="text-sm font-medium text-gray-500 truncate">Kuantiti Litar AI Robotik</dt>
                     <dd class="mt-2 text-3xl font-extrabold text-purple-600" id="metricTotalAI">0</dd>
