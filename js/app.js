@@ -12,16 +12,98 @@ let isSchoolSelectedFromList = false;
 let searchTimeout = null;
 
 // Initialization
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Set current year in footer dynamically
     const yearElement = document.getElementById('currentYear');
     if (yearElement) {
         yearElement.textContent = new Date().getFullYear();
     }
     
-    setupAutocomplete();
-    setupAutoCaps();
+    // Check form status (active toggle and closing date) before initializing other elements
+    const isFormOpen = await checkFormStatus();
+    
+    // Only initialize form interaction features if the form is actually open
+    if (isFormOpen) {
+        setupAutocomplete();
+        setupAutoCaps();
+    }
 });
+
+/**
+ * Fetch settings from Supabase and determine if the form should be displayed.
+ * Returns boolean: true if open, false if closed.
+ */
+async function checkFormStatus() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('myrc_settings')
+            .select('*')
+            .eq('id', 1)
+            .single();
+
+        // PGRST116 means no rows found, which is fine if settings are empty.
+        if (error && error.code !== 'PGRST116') throw error;
+
+        if (data) {
+            const isActive = data.is_active;
+            let isPastClosingDate = false;
+
+            // Check if there is a closing date and if current time has surpassed it
+            if (data.closing_date) {
+                const closingDate = new Date(data.closing_date);
+                const currentDate = new Date();
+                
+                if (currentDate >= closingDate) {
+                    isPastClosingDate = true;
+                }
+            }
+
+            // If form is toggled off OR past closing date, close the form
+            if (!isActive || isPastClosingDate) {
+                displayFormClosedMessage();
+                return false;
+            }
+        }
+        
+        // Default to open if no specific block conditions are met
+        return true;
+        
+    } catch (err) {
+        console.error("Error checking form status:", err);
+        // Fail-safe: if there's a network error checking status, we allow the form to show
+        // so we don't block legitimate users over a temporary API blip.
+        return true;
+    }
+}
+
+/**
+ * Hides the booking form dynamically and displays a professional "Form Closed" UI.
+ */
+function displayFormClosedMessage() {
+    const formElement = document.getElementById('bookingForm');
+    if (formElement) {
+        // Hide the actual form
+        formElement.style.display = 'none';
+
+        // Create and inject the closed message container using Tailwind styling
+        const closedContainer = document.createElement('div');
+        closedContainer.className = 'text-center py-16 px-4 flex flex-col items-center justify-center animate-fade-in';
+        closedContainer.innerHTML = `
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-50 border-4 border-red-100 mb-6">
+                <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h2 class="text-3xl font-extrabold text-gray-900 mb-3 tracking-tight">Borang Telah Ditutup</h2>
+            <p class="text-gray-500 max-w-md mx-auto text-base leading-relaxed">
+                Harap maaf, tempahan untuk Litar Mikrobotik & AI Robotik telah ditutup pada masa ini. Sila hubungi pihak penganjur atau admin untuk sebarang pertanyaan lanjut.
+            </p>
+        `;
+
+        // Insert the closed UI inside the same parent container
+        formElement.parentNode.appendChild(closedContainer);
+    }
+}
 
 /**
  * Enforce auto-caps for text inputs
